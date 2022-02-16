@@ -21,8 +21,6 @@ namespace Game {
         private const string DEFAULT_ASSETS_PATH = "Assets/";
         protected string path = DEFAULT_ASSETS_PATH;
 
-        protected string nameForNew = string.Empty;
-
         /// <summary>
         /// This is the path where new instances of <see cref="T"/> will be saved
         /// </summary>
@@ -55,65 +53,10 @@ namespace Game {
             }
         }
 
-        protected virtual void CreateNew() {
-            if (string.IsNullOrEmpty(this.nameForNew)) {
-                return;
-            }
-
-            T newItem = ScriptableObject.CreateInstance<T>();
-            newItem.name = this.nameForNew;
-
-            this.searchInFolders[0] = $"{this.Path}";
-            string[] foundAssetsGuids = AssetDatabase.FindAssets($"{this.nameForNew}", this.searchInFolders);
-
-            // Prevent duplicates
-            if (foundAssetsGuids != null && foundAssetsGuids.Length > 0) {
-                EditorUtility.DisplayDialog($"{this.nameForNew} already exists!",
-                    $"{this.nameForNew} already exists in {this.Path}.", "OK");
-                return;
-            }
-
-            AssetDatabase.CreateAsset(newItem, $"{this.Path}/{this.nameForNew}.asset");
-            AssetDatabase.SaveAssets();
-
-            this.nameForNew = string.Empty;
-
-            EditorUtility.SetDirty(this.target);
-        }
-
         public virtual void PopulateTree(OdinMenuTree tree) {
         }
 
         public virtual void BeforeDrawingMenuTree() {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("New: ", GUILayout.Width(40));
-            this.nameForNew = EditorGUILayout.TextField(this.nameForNew).Trim();
-
-            if (GUILayout.Button("Add", GUILayout.Width(40), GUILayout.Height(15))) {
-                if (!string.IsNullOrEmpty(this.nameForNew)) {
-                    // Add the new item
-                    CreateNew();
-                    this.nameForNew = "";
-                }
-            }
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Path: ", GUILayout.Width(40));
-            this.Path = EditorGUILayout.TextField(this.Path).Trim();
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Save", CommonGuiStyles.FlexibleButton)) {
-                // Save the current opened Game Manager tab
-                EditorUtility.SetDirty(this.target);
-                AssetDatabase.SaveAssets();
-                GameManager.SetGameManagerDirty();
-                EditorUtility.DisplayDialog("Save", "Save Successful", "OK");
-            }
-
-            GUILayout.EndHorizontal();
         }
 
         public virtual void Initialize() {
@@ -128,6 +71,7 @@ namespace Game {
                 return;
             }
 
+            // Set the first found scriptable object of this type as the target for this drawer
             string firstMatchPath = AssetDatabase.GUIDToAssetPath(foundAssetGuids[0]);
             this.target = AssetDatabase.LoadAssetAtPath<T>(firstMatchPath);
 

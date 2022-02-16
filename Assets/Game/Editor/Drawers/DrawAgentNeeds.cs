@@ -1,11 +1,12 @@
 using System.Collections.Generic;
-using Common;
 using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
 
 namespace Game {
     public class DrawAgentNeeds : DrawScriptableObject<AgentNeeds> {
+        private string nameForNew = string.Empty;
+
         public override bool DisplayDefaultEditor {
             get {
                 return false;
@@ -48,7 +49,7 @@ namespace Game {
             GUILayout.EndHorizontal();
         }
 
-        protected override void CreateNew() {
+        private void CreateNew() {
             if (string.IsNullOrEmpty(this.nameForNew)) {
                 return;
             }

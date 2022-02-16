@@ -13,14 +13,16 @@ namespace Game {
         // Scriptable object drawers to display in the game manager
         private readonly List<IGameManagerDrawer> drawers = new List<IGameManagerDrawer> {
             new DrawAgentNeeds(),
+            new DrawScriptableObject<GameColors>()
         };
 
-        // ======================================================
-        // =====> ADD NEW GAME MANAGER STATES IN THIS ENUM <=====
-        // ======================================================
+        // ============================================================
+        // =====> ADD NEW GAME MANAGER STATES IN THIS ENUM (TAB) <=====
+        // ============================================================
         // ReSharper disable UnusedMember.Local
         private enum ManagerState {
-            AgentNeeds
+            AgentNeeds,
+            GameColors
         }
         // ReSharper restore UnusedMember.Local
 
@@ -46,28 +48,28 @@ namespace Game {
         private IGameManagerDrawer? currentDrawer;
 
         /// <summary>
-        /// This is the index of the toolbar or the enum toggles. Cached here so that it's easy to pull it and render it first
-        /// before the selected manager state.
-        /// </summary>
-        private int topToolBarIndex;
-
-        /// <summary>
         /// This is the current selected value in the <see cref="currentManagerState"/>.
         /// This is the value inside the target ScriptableObject that will be rendered by the <see cref="currentDrawer"/>.
         /// </summary>
         private object? currentSelectedValue;
 
         /// <summary>
-        /// This is a list of selected values in each of the manager states. This is used so that the user does not
-        /// need to select the same item again when returning to a state.
-        /// </summary>
-        private List<object?>? drawerTargets;
-
-        /// <summary>
         /// Cache the menuTree so that we don't build a new one every time the manager is drawn.
         /// We just update the contents of this instance.
         /// </summary>
         private OdinMenuTree? menuTree;
+
+        /// <summary>
+        /// This is the index of the toolbar or the enum toggles. Cached here so that it's easy to pull it from the list and render it first
+        /// before the selected manager state.
+        /// </summary>
+        private int topToolBarIndex;
+
+        /// <summary>
+        /// This is a list of selected values in each of the manager states. This is used so that the user does not
+        /// need to select the same item again when returning to a state.
+        /// </summary>
+        private List<object?>? drawerTargets;
 
         /// <summary>
         /// Implemented as a singleton since the rendering/repainting of windows can happen multiple times per frame
@@ -81,7 +83,10 @@ namespace Game {
         /// </summary>
         private static bool IS_DIRTY = true;
 
-        [MenuItem("Game/Game Manager #&g")] // Add a button in the toolbar to open the game manager with shift+alt+G as the shortcut
+        /// <summary>
+        /// Add a button in the toolbar to open the game manager with shift+alt+G as the shortcut
+        /// </summary>
+        [MenuItem("Game/Game Manager #&g")]
         public static void OpenGameManager() {
             if (INSTANCE != null) {
                 // If a window exists already, focus on it
@@ -168,9 +173,11 @@ namespace Game {
                 return;
             }
 
+            int currentStateDrawerIndex = (int)this.currentManagerState;
+
             if (this.currentDrawer != null && this.currentDrawer.DisplayDefaultEditor) {
                 // Display the target by default based on how Unity and/or Odin normally display that type in the inspector
-                this.drawerTargets[(int)this.currentManagerState] = this.currentDrawer.Target;
+                this.drawerTargets[currentStateDrawerIndex] = this.currentDrawer.Target;
             } else {
                 // Get the target for the current drawer from the menu tree (left side)
                 OdinMenuTreeSelection? treeSelection = this.MenuTree?.Selection ?? null;
@@ -182,11 +189,11 @@ namespace Game {
                 }
 
                 // Set the current selected value as the target to be displayed in the Manager's main body panel (right side) 
-                this.drawerTargets[(int)this.currentManagerState] = this.currentSelectedValue;
+                this.drawerTargets[currentStateDrawerIndex] = this.currentSelectedValue;
             }
 
             // Draw the editor based on the data type of the current target, based on the current manager state
-            DrawEditor((int)this.currentManagerState);
+            DrawEditor(currentStateDrawerIndex);
         }
 
         protected override IEnumerable<object?> GetTargets() {
@@ -246,7 +253,11 @@ namespace Game {
 
             // Populate the menu items (left side( based on the drawer
             this.currentDrawer = this.drawers[currentStateIndex];
-            this.currentDrawer.PopulateTree(this.menuTree);
+
+            if (!this.currentDrawer.DisplayDefaultEditor) {
+                // Populate the menu tree only if we're going to render it
+                this.currentDrawer.PopulateTree(this.menuTree);
+            }
 
             return this.menuTree;
         }
